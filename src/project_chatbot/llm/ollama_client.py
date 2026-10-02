@@ -30,10 +30,15 @@ Rules:
 
 
 class OllamaClient:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        model: str = LLM_MODEL,
+    ) -> None:
         self.client = ollama.Client(
             host=OLLAMA_HOST
         )
+
+        self.model = model
 
     def generate(
         self,
@@ -41,7 +46,7 @@ class OllamaClient:
         context: str,
     ) -> str:
         """
-        Generate an answer using the LLM.
+        Generate an answer using the selected LLM.
         """
 
         prompt = f"""
@@ -57,7 +62,7 @@ Answer the question using the project context above.
 """
 
         response = self.client.chat(
-            model=LLM_MODEL,
+            model=self.model,
             messages=[
                 {
                     "role": "system",
