@@ -52,25 +52,56 @@ def get_environment() -> dict[str, str]:
 
 
 # ---------------------------------------------------------
+# Ollama
+# ---------------------------------------------------------
+
+def stop_ollama() -> None:
+    """
+    Stop all Ollama processes.
+    """
+
+    print()
+    print("Stopping Ollama...")
+
+    subprocess.run(
+        [
+            "killall",
+            "ollama",
+        ],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    print("Ollama stopped.")
+
+
+# ---------------------------------------------------------
 # Web UI
 # ---------------------------------------------------------
 
 def start_web_ui() -> None:
     """
-    Start the Streamlit web interface
-    using the project virtual environment.
+    Start the Streamlit web interface.
     """
 
-    subprocess.run(
-        [
-            str(VENV_STREAMLIT),
-            "run",
-            "app/app.py",
-        ],
-        check=False,
-        cwd=PROJECT_ROOT,
-        env=get_environment(),
-    )
+    try:
+
+        subprocess.run(
+            [
+                str(VENV_STREAMLIT),
+                "run",
+                "app/app.py",
+            ],
+            check=False,
+            cwd=PROJECT_ROOT,
+            env=get_environment(),
+        )
+
+    except KeyboardInterrupt:
+
+        print()
+        print("Stopping Web UI...")
 
 
 # ---------------------------------------------------------
@@ -84,19 +115,26 @@ def start_cli() -> None:
 
     environment = get_environment()
 
-    subprocess.run(
-        [
-            str(VENV_PYTHON),
-            "-c",
-            (
-                "from app.cli import main; "
-                "main()"
-            ),
-        ],
-        check=False,
-        cwd=PROJECT_ROOT,
-        env=environment,
-    )
+    try:
+
+        subprocess.run(
+            [
+                str(VENV_PYTHON),
+                "-c",
+                (
+                    "from app.cli import main; "
+                    "main()"
+                ),
+            ],
+            check=False,
+            cwd=PROJECT_ROOT,
+            env=environment,
+        )
+
+    except KeyboardInterrupt:
+
+        print()
+        print("Stopping CLI...")
 
 
 # ---------------------------------------------------------
@@ -131,48 +169,69 @@ def main() -> None:
 
     setup_environment()
 
-    while True:
+    try:
 
-        show_menu()
+        while True:
 
-        choice = input("Select an option: ").strip()
+            show_menu()
 
-        if choice == "1":
+            choice = input(
+                "Select an option: "
+            ).strip().lower()
 
-            print()
-            print("Starting Web UI...")
-            print()
+            if choice == "1":
 
-            start_web_ui()
+                print()
+                print("Starting Web UI...")
+                print()
 
-            break
+                start_web_ui()
 
-        elif choice == "2":
+                break
 
-            print()
-            print("Starting CLI...")
-            print()
+            elif choice == "2":
 
-            start_cli()
+                print()
+                print("Starting CLI...")
+                print()
 
-            break
+                start_cli()
 
-        elif choice in {"0", "exit", "quit"}:
+                break
 
-            print()
-            print("Goodbye!")
+            elif choice in {
+                "0",
+                "exit",
+                "quit",
+            }:
 
-            break
+                print()
+                print("Goodbye!")
 
-        else:
+                break
 
-            print()
-            print(
-                "Invalid option. "
-                "Please choose 1, 2, or 0."
-            )
-            print()
+            else:
 
+                print()
+                print(
+                    "Invalid option. "
+                    "Please choose 1, 2, or 0."
+                )
+                print()
+
+    except KeyboardInterrupt:
+
+        print()
+        print("Interrupted.")
+
+    finally:
+
+        stop_ollama()
+
+
+# ---------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------
 
 if __name__ == "__main__":
     main()
