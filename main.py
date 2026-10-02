@@ -1,102 +1,177 @@
-from project_chatbot.llm.ollama_client import (
-    OllamaClient,
-)
-from project_chatbot.retrieval.retriever import (
-    Retriever,
-)
+import os
+import subprocess
+from pathlib import Path
 
 
-def build_context(retrieved_documents) -> str:
+# ---------------------------------------------------------
+# Project paths
+# ---------------------------------------------------------
+
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+RUN_SCRIPT = PROJECT_ROOT / "scripts" / "run.sh"
+
+VENV_DIR = PROJECT_ROOT / ".venv"
+
+VENV_PYTHON = VENV_DIR / "bin" / "python"
+
+VENV_STREAMLIT = VENV_DIR / "bin" / "streamlit"
+
+
+# ---------------------------------------------------------
+# Environment
+# ---------------------------------------------------------
+
+def setup_environment() -> None:
     """
-    Build the context sent to the LLM.
+    Run the project environment setup script.
     """
 
-    if not retrieved_documents:
-        return "No relevant project context was found."
-
-    sections = []
-
-    for index, document in enumerate(
-        retrieved_documents,
-        start=1,
-    ):
-        sections.append(
-            f"""
---- Context {index} ---
-Source: {document.source}
-
-{document.content}
-"""
-        )
-
-    return "\n".join(sections)
+    subprocess.run(
+        [
+            "bash",
+            str(RUN_SCRIPT),
+        ],
+        check=True,
+        cwd=PROJECT_ROOT,
+    )
 
 
-def main() -> None:
+def get_environment() -> dict[str, str]:
+    """
+    Return the environment used by the application.
+    """
+
+    environment = os.environ.copy()
+
+    environment["PYTHONPATH"] = str(
+        PROJECT_ROOT / "src"
+    )
+
+    return environment
+
+
+# ---------------------------------------------------------
+# Web UI
+# ---------------------------------------------------------
+
+def start_web_ui() -> None:
+    """
+    Start the Streamlit web interface
+    using the project virtual environment.
+    """
+
+    subprocess.run(
+        [
+            str(VENV_STREAMLIT),
+            "run",
+            "app/app.py",
+        ],
+        check=False,
+        cwd=PROJECT_ROOT,
+        env=get_environment(),
+    )
+
+
+# ---------------------------------------------------------
+# CLI
+# ---------------------------------------------------------
+
+def start_cli() -> None:
+    """
+    Start the command-line interface.
+    """
+
+    environment = get_environment()
+
+    subprocess.run(
+        [
+            str(VENV_PYTHON),
+            "-c",
+            (
+                "from app.cli import main; "
+                "main()"
+            ),
+        ],
+        check=False,
+        cwd=PROJECT_ROOT,
+        env=environment,
+    )
+
+
+# ---------------------------------------------------------
+# Menu
+# ---------------------------------------------------------
+
+def show_menu() -> None:
+    """
+    Display the interface selection menu.
+    """
+
     print("=" * 60)
-    print("Project RAG Chatbot")
+    print("Voltix Project Chatbot")
     print("=" * 60)
-    print("Type 'exit' or 'quit' to leave.")
+    print()
+    print("Choose an interface:")
+    print()
+    print("1. Web UI")
+    print("2. CLI")
+    print("0. Exit")
     print()
 
-    retriever = Retriever()
-    llm = OllamaClient()
+
+# ---------------------------------------------------------
+# Main
+# ---------------------------------------------------------
+
+def main() -> None:
+    """
+    Start the Voltix chatbot.
+    """
+
+    setup_environment()
 
     while True:
-        try:
-            question = input("You: ").strip()
 
-        except (KeyboardInterrupt, EOFError):
-            print("\nGoodbye!")
+        show_menu()
+
+        choice = input("Select an option: ").strip()
+
+        if choice == "1":
+
+            print()
+            print("Starting Web UI...")
+            print()
+
+            start_web_ui()
+
             break
 
-        if not question:
-            continue
+        elif choice == "2":
 
-        if question.lower() in {
-            "exit",
-            "quit",
-        }:
+            print()
+            print("Starting CLI...")
+            print()
+
+            start_cli()
+
+            break
+
+        elif choice in {"0", "exit", "quit"}:
+
+            print()
             print("Goodbye!")
+
             break
 
-        print("\nSearching project knowledge...")
+        else:
 
-        retrieved_documents = retriever.retrieve(
-            question
-        )
-
-        context = build_context(
-            retrieved_documents
-        )
-
-        print("Generating answer...\n")
-
-        answer = llm.generate(
-            question=question,
-            context=context,
-        )
-
-        print(f"Assistant: {answer}")
-
-        print("\nSources:")
-
-        if retrieved_documents:
-            seen_sources = set()
-
-            for document in retrieved_documents:
-                if document.source in seen_sources:
-                    continue
-
-                print(
-                    f"- {document.source}"
-                )
-
-                seen_sources.add(
-                    document.source
-                )
-
-        print()
+            print()
+            print(
+                "Invalid option. "
+                "Please choose 1, 2, or 0."
+            )
+            print()
 
 
 if __name__ == "__main__":
