@@ -1,15 +1,25 @@
 import sys
 from pathlib import Path
 
+import ollama
 import streamlit as st
 
 
+# ---------------------------------------------------------
 # Add src/ to Python path
+# ---------------------------------------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
 
 sys.path.insert(0, str(SRC_DIR))
 
+
+from project_chatbot.config import (
+    EMBEDDING_MODEL,
+    LLM_MODEL,
+    OLLAMA_HOST,
+)
 
 from project_chatbot.llm.ollama_client import OllamaClient
 from project_chatbot.retrieval.retriever import Retriever
@@ -63,7 +73,42 @@ st.markdown(
 
 
 # ---------------------------------------------------------
-# Initialize application objects
+# Ollama model discovery
+# ---------------------------------------------------------
+
+@st.cache_data(ttl=30)
+def get_ollama_models() -> list[str]:
+    """
+    Get all models currently installed in Ollama.
+    """
+
+    try:
+        client = ollama.Client(
+            host=OLLAMA_HOST
+        )
+
+        response = client.list()
+
+        models = []
+
+        for model in response["models"]:
+            model_name = model["model"]
+
+            # Do not show the embedding model
+            # as an LLM option.
+            if model_name == EMBEDDING_MODEL:
+                continue
+
+            models.append(model_name)
+
+        return sorted(models)
+
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------
+# Initialize retriever
 # ---------------------------------------------------------
 
 @st.cache_resource
@@ -71,13 +116,7 @@ def get_retriever() -> Retriever:
     return Retriever()
 
 
-@st.cache_resource
-def get_llm() -> OllamaClient:
-    return OllamaClient()
-
-
 retriever = get_retriever()
-llm = get_llm()
 
 
 # ---------------------------------------------------------
@@ -86,6 +125,10 @@ llm = get_llm()
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+
+if "selected_llm" not in st.session_state:
+    st.session_state.selected_llm = LLM_MODEL
 
 
 # ---------------------------------------------------------
@@ -109,6 +152,7 @@ def build_context(retrieved_documents) -> str:
         sections.append(
             f"""
 --- Context {index} ---
+
 Source: {document.source}
 
 {document.content}
@@ -170,15 +214,53 @@ with st.sidebar:
 
     st.subheader("Models")
 
-    st.caption(
-        "LLM: Qwen2.5-Coder 7B"
-    )
+    # -----------------------------------------------------
+    # LLM model selection
+    # -----------------------------------------------------
+
+    available_models = get_ollama_models()
+    # available_models.remove("nomic-embed-text:latest")
+
+    if available_models:
+        # Make sure the configured default exists.
+        if (
+            st.session_state.selected_llm
+            not in available_models
+        ):
+            st.session_state.selected_llm = (
+                available_models[0]
+            )
+
+        selected_llm = st.selectbox(
+            "LLM Model",
+            options=available_models,
+            index=available_models.index(
+                st.session_state.selected_llm
+            ),
+        )
+
+        st.session_state.selected_llm = selected_llm
+
+    else:
+        st.warning(
+            "No Ollama LLM models were found."
+        )
+
+        selected_llm = LLM_MODEL
+
+    # -----------------------------------------------------
+    # Static embedding model
+    # -----------------------------------------------------
 
     st.caption(
-        "Embeddings: nomic-embed-text"
+        f"Embedding Model: {EMBEDDING_MODEL}"
     )
 
     st.divider()
+
+    # -----------------------------------------------------
+    # Clear chat
+    # -----------------------------------------------------
 
     if st.button(
         "Clear Chat",
@@ -189,12 +271,26 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------
+# Initialize selected LLM
+# ---------------------------------------------------------
+
+llm = OllamaClient(
+    model=selected_llm
+)
+
+
+# ---------------------------------------------------------
 # Display previous messages
 # ---------------------------------------------------------
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+
+    with st.chat_message(
+        message["role"]
+    ):
+        st.markdown(
+            message["content"]
+        )
 
         if (
             message["role"] == "assistant"
@@ -216,8 +312,16 @@ question = st.chat_input(
 )
 
 
+# ---------------------------------------------------------
+# Process question
+# ---------------------------------------------------------
+
 if question:
+
+    # -----------------------------------------------------
     # Display user message
+    # -----------------------------------------------------
+
     st.session_state.messages.append(
         {
             "role": "user",
@@ -228,14 +332,26 @@ if question:
     with st.chat_message("user"):
         st.markdown(question)
 
+    # -----------------------------------------------------
     # Generate assistant response
+    # -----------------------------------------------------
+
     with st.chat_message("assistant"):
+
+        # -------------------------------------------------
+        # Retrieval
+        # -------------------------------------------------
+
         with st.spinner(
             "Searching project knowledge..."
         ):
+
             try:
+
                 retrieved_documents = (
-                    retriever.retrieve(question)
+                    retriever.retrieve(
+                        question
+                    )
                 )
 
                 context = build_context(
@@ -243,40 +359,64 @@ if question:
                 )
 
             except Exception as error:
+
                 st.error(
                     f"Retrieval error: {error}"
                 )
+
                 st.stop()
 
+        # -------------------------------------------------
+        # LLM generation
+        # -------------------------------------------------
+
         with st.spinner(
-            "Generating answer..."
+            f"Generating answer with {selected_llm}..."
         ):
+
             try:
+
                 answer = llm.generate(
                     question=question,
                     context=context,
                 )
 
             except Exception as error:
+
                 st.error(
                     f"LLM error: {error}"
                 )
+
                 st.stop()
 
+        # -------------------------------------------------
+        # Display answer
+        # -------------------------------------------------
+
         st.markdown(answer)
+
+        # -------------------------------------------------
+        # Sources
+        # -------------------------------------------------
 
         sources = get_sources(
             retrieved_documents
         )
 
         if sources:
+
             with st.expander("Sources"):
+
                 for source in sources:
+
                     st.markdown(
                         f"- `{source}`"
                     )
 
+    # -----------------------------------------------------
     # Save assistant response
+    # -----------------------------------------------------
+
     st.session_state.messages.append(
         {
             "role": "assistant",
