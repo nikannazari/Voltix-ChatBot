@@ -20,8 +20,8 @@ from project_chatbot.retrieval.retriever import Retriever
 # ---------------------------------------------------------
 
 st.set_page_config(
-    page_title="Project Chatbot",
-    page_icon="🤖",
+    page_title="Voltix ChatBot",
+    page_icon="⚡",
     layout="wide",
 )
 
@@ -141,14 +141,14 @@ def get_sources(retrieved_documents) -> list[str]:
 # ---------------------------------------------------------
 
 st.markdown(
-    '<div class="chat-title">🤖 Project Chatbot</div>',
+    '<div class="chat-title">⚡Voltix ChatBot</div>',
     unsafe_allow_html=True,
 )
 
 st.markdown(
     """
     <div class="chat-subtitle">
-        Ask questions about your project using your local RAG knowledge base.
+        Ask questions about Voltix facilities.
     </div>
     """,
     unsafe_allow_html=True,
@@ -160,7 +160,7 @@ st.markdown(
 # ---------------------------------------------------------
 
 with st.sidebar:
-    st.header("Project Chatbot")
+    st.header("Voltix Chatbot")
 
     st.write(
         "Local RAG assistant powered by Ollama and ChromaDB."
@@ -212,7 +212,7 @@ for message in st.session_state.messages:
 # ---------------------------------------------------------
 
 question = st.chat_input(
-    "Ask something about your project..."
+    "Ask something about Voltix..."
 )
 
 
