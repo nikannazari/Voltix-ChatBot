@@ -219,7 +219,7 @@ with st.sidebar:
     # -----------------------------------------------------
 
     available_models = get_ollama_models()
-    # available_models.remove("nomic-embed-text:latest")
+    available_models.remove("nomic-embed-text:latest")
 
     if available_models:
         # Make sure the configured default exists.
