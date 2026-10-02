@@ -2,26 +2,38 @@
 
 set -e
 
+
+# ---------------------------------------------------------
+# Project root
+# ---------------------------------------------------------
+
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$PROJECT_ROOT"
 
 
 # ---------------------------------------------------------
-# Python virtual environment
+# Virtual environment
 # ---------------------------------------------------------
 
 if [ ! -d ".venv" ]; then
-    echo "Creating Python virtual environment..."
+
+    echo "Creating virtual environment..."
 
     python -m venv .venv
+
 fi
 
+
+# ---------------------------------------------------------
+# Activate virtual environment
+# ---------------------------------------------------------
 
 echo "Activating virtual environment..."
 
 source .venv/bin/activate
 
+echo "Acitaved."
 
 # ---------------------------------------------------------
 # Python path
@@ -34,10 +46,14 @@ export PYTHONPATH="$PWD/src"
 # Dependencies
 # ---------------------------------------------------------
 
+echo "Checking dependencies..."
+
 if ! python -c "import chromadb, ollama, streamlit" 2>/dev/null; then
-    echo "Installing project dependencies..."
+
+    echo "Installing dependencies..."
 
     pip install -r requirements.txt
+
 fi
 
 
@@ -45,21 +61,23 @@ fi
 # Ollama
 # ---------------------------------------------------------
 
-if ! pgrep -x "ollama" > /dev/null; then
+if pgrep -x "ollama" > /dev/null; then
+
+    echo "Ollama is already running."
+
+else
+
     echo "Starting Ollama..."
 
-    ollama serve > /tmp/ollama.log 2>&1 &
+    ollama serve > /tmp/voltix-ollama.log 2>&1 &
 
     sleep 2
+
+    echo "Ollama started."
+
 fi
 
 
-# ---------------------------------------------------------
-# Start application
-# ---------------------------------------------------------
-
 echo
-echo "Starting Voltix Project Chatbot..."
+echo "Environment setup completed."
 echo
-
-python -m project_chatbot.main
