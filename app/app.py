@@ -43,6 +43,7 @@ TRANSLATIONS = {
     "en": {
         "title": "⚡ Voltix ChatBot",
         "subtitle": "Ask questions about Voltix facilities.",
+
         "language": "Language",
         "switch": "فارسی",
 
@@ -82,6 +83,7 @@ TRANSLATIONS = {
     "fa": {
         "title": "⚡ چت‌بات Voltix",
         "subtitle": "درباره پروژه Voltix سؤال بپرسید.",
+
         "language": "زبان",
         "switch": "English",
 
@@ -135,6 +137,17 @@ if "selected_llm" not in st.session_state:
 
 
 # ---------------------------------------------------------
+# Language toggle
+# ---------------------------------------------------------
+
+def toggle_language():
+    if st.session_state.language == "en":
+        st.session_state.language = "fa"
+    else:
+        st.session_state.language = "en"
+
+
+# ---------------------------------------------------------
 # Current UI language
 # ---------------------------------------------------------
 
@@ -145,17 +158,6 @@ is_rtl = language == "fa"
 
 direction = "rtl" if is_rtl else "ltr"
 alignment = "right" if is_rtl else "left"
-
-
-# ---------------------------------------------------------
-# Language toggle
-# ---------------------------------------------------------
-
-def toggle_language():
-    if st.session_state.language == "en":
-        st.session_state.language = "fa"
-    else:
-        st.session_state.language = "en"
 
 
 # ---------------------------------------------------------
@@ -208,6 +210,18 @@ st.markdown(
 
         [data-testid="stSidebar"] .stMarkdown {{
             text-align: {alignment};
+        }}
+
+        [data-testid="stSidebar"] .stCaption {{
+            text-align: {alignment};
+        }}
+
+        [data-testid="stSidebar"] .stSelectbox {{
+            direction: {direction};
+        }}
+
+        [data-testid="stSidebar"] .stButton {{
+            direction: {direction};
         }}
 
         [data-testid="stChatMessage"] {{
@@ -348,50 +362,6 @@ def get_sources(retrieved_documents) -> list[str]:
 
 
 # ---------------------------------------------------------
-# Header
-# ---------------------------------------------------------
-
-language_col, title_col = st.columns([1, 5])
-
-with language_col:
-
-    st.caption(text["language"])
-
-    st.button(
-        text["switch"],
-        on_click=toggle_language,
-        use_container_width=True,
-    )
-
-
-with title_col:
-
-    st.markdown(
-        f"""
-        <div
-            class="chat-title"
-            dir="{direction}"
-        >
-            {text["title"]}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f"""
-        <div
-            class="chat-subtitle"
-            dir="{direction}"
-        >
-            {text["subtitle"]}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-# ---------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------
 
@@ -405,11 +375,25 @@ with st.sidebar:
 
     st.divider()
 
-    st.subheader(text["models"])
+    # -----------------------------------------------------
+    # Language
+    # -----------------------------------------------------
+
+    st.subheader(text["language"])
+
+    st.button(
+        text["switch"],
+        on_click=toggle_language,
+        use_container_width=True,
+    )
+
+    st.divider()
 
     # -----------------------------------------------------
-    # LLM model selection
+    # Models
     # -----------------------------------------------------
+
+    st.subheader(text["models"])
 
     available_models = get_ollama_models()
 
@@ -464,6 +448,35 @@ with st.sidebar:
         st.session_state.messages = []
 
         st.rerun()
+
+
+# ---------------------------------------------------------
+# Header
+# ---------------------------------------------------------
+
+st.markdown(
+    f"""
+    <div
+        class="chat-title"
+        dir="{direction}"
+    >
+        {text["title"]}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    f"""
+    <div
+        class="chat-subtitle"
+        dir="{direction}"
+    >
+        {text["subtitle"]}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------------
