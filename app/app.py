@@ -95,7 +95,9 @@ TRANSLATIONS = {
         "models": "مدل‌ها",
         "llm_model": "مدل زبانی",
         "embedding_model": "مدل Embedding",
-        "model_help": "مدل Ollama مورد استفاده برای تولید پاسخ را انتخاب کنید.",
+        "model_help": (
+            "مدل Ollama مورد استفاده برای تولید پاسخ را انتخاب کنید."
+        ),
         "no_models": "هیچ مدل زبانی Ollama پیدا نشد.",
 
         "clear_chat": "پاک کردن گفتگو",
@@ -168,6 +170,10 @@ st.markdown(
     f"""
     <style>
 
+        /* =================================================
+           GLOBAL
+           ================================================= */
+
         .stApp {{
             direction: {direction};
         }}
@@ -176,6 +182,11 @@ st.markdown(
             max-width: 1100px;
             padding-top: 2rem;
         }}
+
+
+        /* =================================================
+           HEADER
+           ================================================= */
 
         .chat-title {{
             font-size: 2.2rem;
@@ -192,6 +203,11 @@ st.markdown(
             text-align: {alignment};
         }}
 
+
+        /* =================================================
+           GENERAL STREAMLIT TEXT
+           ================================================= */
+
         .stMarkdown {{
             direction: {direction};
         }}
@@ -204,8 +220,18 @@ st.markdown(
             direction: {direction};
         }}
 
+
+        /* =================================================
+           SIDEBAR
+           ================================================= */
+
         [data-testid="stSidebar"] {{
             direction: {direction};
+            overflow: hidden !important;
+        }}
+
+        [data-testid="stSidebar"] > div {{
+            overflow: hidden !important;
         }}
 
         [data-testid="stSidebar"] .stMarkdown {{
@@ -224,6 +250,49 @@ st.markdown(
             direction: {direction};
         }}
 
+        [data-testid="stSidebar"] * {{
+            max-width: 100%;
+            box-sizing: border-box;
+        }}
+
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] div {{
+            overflow-wrap: anywhere;
+        }}
+
+
+        /* =================================================
+           SIDEBAR POSITION
+           
+           English -> LEFT
+           Persian -> RIGHT
+           ================================================= */
+
+        {"[data-testid='stSidebar'] { left: auto !important; right: 0 !important; }" if is_rtl else "[data-testid='stSidebar'] { left: 0 !important; right: auto !important; }"}
+
+
+        /* =================================================
+           RTL COLLAPSED SIDEBAR
+           ================================================= */
+
+        {"[data-testid='stSidebar'][aria-expanded='false'] { left: auto !important; right: 0 !important; }" if is_rtl else ""}
+
+
+        /* =================================================
+           SIDEBAR COLLAPSE BUTTON
+           ================================================= */
+
+        [data-testid="stSidebarCollapseButton"] {{
+            z-index: 999999 !important;
+        }}
+
+
+        /* =================================================
+           CHAT MESSAGES
+           ================================================= */
+
         [data-testid="stChatMessage"] {{
             direction: {direction};
         }}
@@ -232,20 +301,42 @@ st.markdown(
             text-align: {alignment};
         }}
 
+
+        /* =================================================
+           CHAT INPUT
+           ================================================= */
+
         [data-testid="stChatInput"] textarea {{
             direction: {direction};
             text-align: {alignment};
         }}
 
+
+        /* =================================================
+           EXPANDERS
+           ================================================= */
+
         [data-testid="stExpander"] {{
             direction: {direction};
         }}
+
+
+        /* =================================================
+           CODE / TECHNICAL IDENTIFIERS
+           
+           Always remain LTR.
+           ================================================= */
 
         code,
         pre {{
             direction: ltr !important;
             text-align: left !important;
         }}
+
+
+        /* =================================================
+           FOOTER
+           ================================================= */
 
         .voltix-footer {{
             margin-top: 3rem;
@@ -367,7 +458,9 @@ def get_sources(retrieved_documents) -> list[str]:
 
 with st.sidebar:
 
-    st.header(text["sidebar_title"])
+    st.header(
+        text["sidebar_title"]
+    )
 
     st.write(
         text["sidebar_description"]
@@ -379,7 +472,9 @@ with st.sidebar:
     # Language
     # -----------------------------------------------------
 
-    st.subheader(text["language"])
+    st.subheader(
+        text["language"]
+    )
 
     st.button(
         text["switch"],
@@ -393,7 +488,9 @@ with st.sidebar:
     # Models
     # -----------------------------------------------------
 
-    st.subheader(text["models"])
+    st.subheader(
+        text["models"]
+    )
 
     available_models = get_ollama_models()
 
@@ -481,6 +578,10 @@ st.markdown(
 
 # ---------------------------------------------------------
 # Initialize LLM
+#
+# IMPORTANT:
+# Language is NOT passed to Ollama.
+# The language setting only changes the UI.
 # ---------------------------------------------------------
 
 llm = OllamaClient(
@@ -620,7 +721,9 @@ if question:
         # Display answer
         # -------------------------------------------------
 
-        st.markdown(answer)
+        st.markdown(
+            answer
+        )
 
         # -------------------------------------------------
         # Sources
